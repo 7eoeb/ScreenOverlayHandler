@@ -1,0 +1,239 @@
+local screenOverlayHandler = {}
+
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local cam = Workspace.CurrentCamera
+local rotationThread = nil
+local activeAnimation = false
+
+local openInfo = TweenInfo.new(
+	1.75,
+	Enum.EasingStyle.Sine,
+	Enum.EasingDirection.InOut,
+	0,
+	false,
+	0
+)
+
+local particleInfo = TweenInfo.new(
+	0.5,
+	Enum.EasingStyle.Exponential,
+	Enum.EasingDirection.InOut,
+	0,
+	false,
+	0
+)
+
+local uiCornerInfo = TweenInfo.new(
+	0.25,
+	Enum.EasingStyle.Quint,
+	Enum.EasingDirection.In,
+	0,
+	false,
+	0
+)
+
+local assetInfo = TweenInfo.new(
+	1,
+	Enum.EasingStyle.Quart,
+	Enum.EasingDirection.InOut,
+	0,
+	false,
+	0
+)
+
+local function createParticleEffects(screenGui: ScreenGui)
+	if not screenGui:IsA("ScreenGui") then return end
+
+	local activeFrames = {}
+	local maxSizePercent = 0.05
+	local viewportSize = cam.ViewportSize
+	local sizeValue = math.ceil(math.max(viewportSize.X * maxSizePercent, viewportSize.Y * maxSizePercent))
+	local frameSize = UDim2.fromScale(sizeValue / viewportSize.X, sizeValue / viewportSize.Y)
+
+	local xFrames = math.ceil(viewportSize.X / sizeValue) + 3
+	local yFrames = math.ceil(viewportSize.Y / sizeValue) + 3
+
+	local totalWidth = xFrames * sizeValue
+	local totalHeight = yFrames * sizeValue
+
+	local startX = (viewportSize.X / 2) - ((xFrames - 2) * sizeValue / 2) - sizeValue
+	local startY = (viewportSize.Y / 2) - ((yFrames - 2) * sizeValue / 2) - sizeValue
+
+	for x = -1, xFrames do
+		activeFrames[x] = {}
+		for y = -1, yFrames do
+			local frame = Instance.new("Frame", screenGui)
+			frame.Size = frameSize
+			frame.Position = UDim2.fromScale((startX + (x * sizeValue)) / viewportSize.X, (startY + (y * sizeValue)) / viewportSize.Y)
+			frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			frame.AnchorPoint = Vector2.new(0.5, 0.5)
+			frame.Name = "TemporaryOverlayFrame"
+			
+			Instance.new("UIAspectRatioConstraint", frame).AspectRatio = 1
+
+			local uiCorner = Instance.new("UICorner", frame)
+			uiCorner.CornerRadius = UDim.new(0, 0)
+
+			activeFrames[x][y] = frame
+		end
+	end
+
+	task.delay(0.15, function()
+		local frame = screenGui:FindFirstChild("ScreenOverlayFrame")
+		if frame then
+			frame:Destroy()
+		end
+	end)
+
+	local minSum = (-1) - yFrames
+	local maxSum = xFrames + 1
+
+	for sum = minSum, maxSum do
+		task.wait(0.015)
+		for x = -1, xFrames do
+			local y = x - sum
+			if activeFrames[x] and activeFrames[x][y] then
+				local frame = activeFrames[x][y]
+				local frameTween = TweenService:Create(frame, particleInfo, {Size = UDim2.fromScale(0, 0)})
+				frameTween:Play()
+				frameTween.Completed:Connect(function()
+					frame:Destroy()
+				end)
+
+				local uiCorner = frame:FindFirstChildOfClass("UICorner")
+				if uiCorner then
+					local uiCornerTween = TweenService:Create(uiCorner, uiCornerInfo, {CornerRadius = UDim.new(0.5, 0)})
+					uiCornerTween:Play()
+					uiCornerTween.Completed:Connect(function()
+						uiCornerTween:Destroy()
+					end)
+				end
+			end
+		end
+	end
+
+	task.wait(particleInfo.Time)
+	screenGui:Destroy()
+	activeAnimation = false
+end
+
+function screenOverlayHandler:Create(action, message : string)
+	if activeAnimation then return end
+	
+	if typeof(message) ~= "string" then
+		message = ""
+	end
+	
+	if typeof(action) ~= "function" then
+		action = function() end
+	end
+	
+	activeAnimation = true
+	
+	local function getDiagonal()
+		local camViewportSize = cam.ViewportSize
+		return math.sqrt((camViewportSize.X ^ 2) + (camViewportSize.Y ^ 2)) * 5
+	end
+
+	local diagonal = getDiagonal()
+	local targetSize = UDim2.fromOffset(diagonal, diagonal)
+
+	local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
+	local screenGui = Instance.new("ScreenGui", playerGui)
+	local frame = Instance.new("Frame", screenGui)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(1, 0)
+
+	screenGui.Name = "ScreenOverlayGui"
+	screenGui.IgnoreGuiInset = true
+
+	frame.Name = "ScreenOverlayFrame"
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.Size = UDim2.fromScale(0, 0)
+	frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	frame.Position = UDim2.fromScale(0.5, 0.5)
+	
+	local textLabel = Instance.new("TextLabel", screenGui)
+	Instance.new("UITextSizeConstraint", textLabel).MaxTextSize = math.ceil(cam.ViewportSize.Y * 0.025) + 1
+	Instance.new("UIAspectRatioConstraint", textLabel).AspectRatio = 10
+	textLabel.BackgroundTransparency = 1
+	textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	textLabel.Size = UDim2.fromScale(1, 0.1)
+	textLabel.TextTransparency = 1
+	textLabel.Position = UDim2.fromScale(0.5, 0.725)
+	textLabel.TextScaled = true
+	textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.Name = "TemporaryTextLabel"
+	textLabel.Text = message
+	
+	local textLabelTween = TweenService:Create(textLabel, assetInfo, {TextTransparency = 0.1, Position = UDim2.fromScale(0.5, 0.7)})
+	textLabelTween:Play()
+	textLabelTween.Completed:Connect(function()
+		textLabelTween:Destroy()
+	end)
+
+	rotationThread = task.spawn(function()
+		local image = Instance.new("ImageLabel", frame)
+		image.AnchorPoint = Vector2.new(0.5, 0.5)
+		image.Size = UDim2.fromScale(0, 0)
+		image.Position = UDim2.fromScale(0.5, 0.5)
+		image.Image = "rbxassetid://" .. 98007758191436
+		image.BackgroundTransparency = 1
+
+		local maxSizePercent = 0.15
+		local viewportSize = cam.ViewportSize
+		local sizeValue = math.ceil(math.max(viewportSize.X * maxSizePercent, viewportSize.Y * maxSizePercent))
+
+		local imageTween = TweenService:Create(image, assetInfo, {Size = UDim2.fromOffset(sizeValue, sizeValue)})
+		imageTween:Play()
+		imageTween.Completed:Wait()
+		imageTween:Destroy()
+
+		Instance.new("UIAspectRatioConstraint", image)
+
+		while true do
+			local imageTween = TweenService:Create(image, assetInfo, {Rotation = image.Rotation - 180})
+			imageTween:Play()
+			imageTween.Completed:Wait()
+			imageTween:Destroy()
+		end
+	end)
+
+	local frameTween = TweenService:Create(frame, openInfo, {Size = targetSize})
+	frameTween:Play()
+	frameTween.Completed:Wait()
+	frameTween:Destroy()
+
+	action()
+
+	task.spawn(function()
+		if rotationThread then
+			task.cancel(rotationThread)
+		end
+
+		local image = frame:FindFirstChildOfClass("ImageLabel")
+		if image then
+			local shrinkTween = TweenService:Create(image, assetInfo, {Size = UDim2.fromScale(0, 0)})
+			shrinkTween:Play()
+			shrinkTween.Completed:Connect(function()
+				shrinkTween:Destroy()
+			end)
+		end
+		
+		local textLabel = screenGui:FindFirstChildOfClass("TextLabel")
+		if textLabel then
+			local textLabelTween = TweenService:Create(textLabel, assetInfo, {TextTransparency = 1, Position = UDim2.fromScale(0.5, 0.675)})
+			textLabelTween:Play()
+			textLabelTween.Completed:Connect(function()
+				textLabelTween:Destroy()
+			end)
+		end
+		
+		task.wait(assetInfo.Time)
+
+		createParticleEffects(screenGui)
+	end)
+end
+
+return screenOverlayHandler
