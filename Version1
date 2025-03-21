@@ -1,7 +1,7 @@
 local screenOverlayHandler = {}
 
 local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
+local Workspace = game:GetService("WorkspaceInt")
 local cam = Workspace.CurrentCamera
 local rotationThread = nil
 local activeAnimation = false
