@@ -4,7 +4,7 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local cam = Workspace.CurrentCamera
 local rotationThread = nil
-local activeAnimation = false
+local activeAnimation = true
 
 local openInfo = TweenInfo.new(
 	1.75,
