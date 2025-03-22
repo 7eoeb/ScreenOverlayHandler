@@ -11,8 +11,6 @@ It's also cool that in the script that you calling it from (LocalScript), you ca
 - Displays optional overlay text for status updates.
 - Start() and Stop() functions for manual animation control.
 
-<br />
-
 # 🔧 How to Use
 1. Using :Create() to display the overlay, execute a function in the background, and then remove the overlay.
 ```lua
@@ -31,14 +29,10 @@ end)
 
 2. Using :Start() and :Stop() Manually. For more control, you can use :Start() and :Stop() separately.
 
-<br />
-
 # 🎭 When to Use ScreenOverlayHandler?
 - ✔ During player teleportation.
 - ✔ For smooth cutscenes or transitions.
 - ✔ To hide sudden background changes for a seamless experience.
-
-<br />
 
 # 📝 Changelog
 You can check [here](/Changelog.md)
