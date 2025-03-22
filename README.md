@@ -28,6 +28,27 @@ end)
 ```
 
 2. Using :Start() and :Stop() Manually. For more control, you can use :Start() and :Stop() separately.
+```lua
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid: Humanoid | nil = Character:WaitForChild("Humanoid")
+
+local ScreenOverlayHandler = require(ReplicatedStorage.ScreenOverlayHandler)
+
+
+script.Parent.Activated:Connect(function()
+	ScreenOverlayHandler:Start("Processing...") -- Message is optional
+end)
+
+if Humanoid then
+	Humanoid.Died:Connect(function()
+		-- This stop when player died
+		ScreenOverlayHandler:Stop()
+	end)
+end
+```
 
 # 🎭 When to Use ScreenOverlayHandler?
 - ✔ During player teleportation.
